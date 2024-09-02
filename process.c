@@ -14,8 +14,8 @@ void process_args(file2png_ctx *ctx, int argc, char * const *argv)
         {"version", no_argument, NULL, 'v'},
         {"input", required_argument, NULL, 'i'},
         {"output", required_argument, NULL, 'o'},
-        {"forwords", no_argument, NULL, 'f'},
-        {"backwords", no_argument, NULL, 'b'},
+        {"forwards", no_argument, NULL, 'f'},
+        {"backwards", no_argument, NULL, 'b'},
         {0, 0, 0, 0}
     };
     int opt,opt_index=0;
@@ -36,10 +36,10 @@ void process_args(file2png_ctx *ctx, int argc, char * const *argv)
                 ctx->out_filename = optarg;
                 break;
             case 'f':
-                ctx->sign = FILE2PNG_FORWORDS;
+                ctx->sign = FILE2PNG_FORWARDS;
                 break;
             case 'b':
-                ctx->sign = FILE2PNG_BACKWORDS;
+                ctx->sign = FILE2PNG_BACKWARDS;
                 break;
             default:
                 fprintf(stderr, "Invalid option: '-%c' or --%s\n", opt, argv[optind-1]);
@@ -51,7 +51,7 @@ void process_args(file2png_ctx *ctx, int argc, char * const *argv)
         goto ERROR;
     }
     if(!ctx->out_filename){
-        fprintf(stderr, "Warning: Output file not specified. <InputFileName>.png will be used for forwords and <InputFileName>.file will be used for backwords.\n");
+        fprintf(stderr, "Warning: Output file not specified. <InputFileName>.png will be used for forwards and <InputFileName>.file will be used for backwards.\n");
         //goto ERROR;
     }
     return;
@@ -69,8 +69,8 @@ void print_usage(const char *program)
     printf("  -v, --version                 Print version information\n");
     printf("  -i, --input <filename>        Input file to convert\n");
     printf("  -o, --output <filename>       Output file\n");
-    printf("  -f, --forwords                Convert file to PNG\n");
-    printf("  -b, --backwords               Convert PNG to file\n");
+    printf("  -f, --forwards                Convert file to PNG\n");
+    printf("  -b, --backwards               Convert PNG to file\n");
 }
 
 
@@ -78,10 +78,10 @@ int process_image(file2png_ctx *ctx)
 {
     if(!ctx) 
         return EXIT_FAILURE;
-    if(ctx->sign == FILE2PNG_FORWORDS){
+    if(ctx->sign == FILE2PNG_FORWARDS){
         return file2png(ctx->in_filename, ctx->out_filename);
     }
-    else if (ctx->sign == FILE2PNG_BACKWORDS){
+    else if (ctx->sign == FILE2PNG_BACKWARDS){
         return png2file(ctx->in_filename, ctx->out_filename);
     }
     else{

@@ -6,8 +6,8 @@
 #include <png.h>
 
 //signs
-#define FILE2PNG_FORWORDS 1 // file to png
-#define FILE2PNG_BACKWORDS 2 // png back to file
+#define FILE2PNG_FORWARDS 1 // file to png
+#define FILE2PNG_BACKWARDS 2 // png back to file
 
 typedef struct _file2png_ctx{
     uint8_t sign;
