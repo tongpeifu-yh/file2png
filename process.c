@@ -189,7 +189,7 @@ int file2png(const char *filename, const char *pngname)
     png_write_bytes(png_ptr, &buf, (png_bytep)filename, strlen(filename));
     png_write_bytes(png_ptr, &buf, (png_bytep)&file_size, sizeof(file_size));
     //png_write_bytes(png_ptr, &buf, &filename_length, sizeof(filename_length));
-    png_byte tmp[4096];
+    png_byte tmp[8192];
     size_t read_len;
     while((read_len = fread(tmp, sizeof(png_byte), sizeof(tmp), ifp)) > 0){
         png_write_bytes(png_ptr, &buf, tmp, read_len);
@@ -357,7 +357,7 @@ int png2file(const char *pngname, const char *filename)
         fprintf(stderr, "Error: File size is too long.\n");
         goto ERROR;
     }
-    png_byte tmp[4096];
+    png_byte tmp[8192];
     size_t write_len = 0;
     
     // while((write_len = fread(tmp, sizeof(png_byte), sizeof(tmp), ifp)) > 0){
