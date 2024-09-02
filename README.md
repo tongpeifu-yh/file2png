@@ -6,6 +6,8 @@ CMake is supported. Since the GNU-like command line interface, MinGW is required
 ```shell
 git clone https://github.com/tongpeifu-yh/file2png.git
 cd file2png
+# Now change the library path in CMakeLists.txt to build on your system
+# After that,
 cmake -B ./build -G Ninja -DCMAKE_C_COMPILER=gcc -S ./
 cmake --build ./build
 ```
