@@ -22,7 +22,7 @@ Options:
   -v, --version                 Print version information
   -i, --input <filename>        Input file to convert
   -o, --output <filename>       Output file
-  -f, --forwords                Convert file to PNG
-  -b, --backwords               Convert PNG to file
+  -f, --forwards                Convert file to PNG
+  -b, --backwards               Convert PNG to file
 
 ```
