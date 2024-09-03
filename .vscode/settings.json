@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "png.h": "c",
-        "getopt.h": "c"
+        "getopt.h": "c",
+        "process.h": "c"
     }
 }

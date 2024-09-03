@@ -1,8 +1,7 @@
-#include <stdio.h>
-
-#include <png.h>
-
 #include "process.h"
+#include "public.h"
+
+
 int main(int argc, char * const *argv)
 {
     file2png_ctx ctx = {FILE2PNG_FORWARDS, NULL, NULL};

@@ -6,6 +6,18 @@
 #include "process.h"
 #include "public.h"
 
+/*
+Data structure
+    1. Header
+        contains the program name and version, 
+        length is `sizeof(file2png_name) + sizeof(file2png_version)`
+    2. Initial file path
+        contains the length of the file name and the file name, 
+        length is `sizeof(filename_length) + filename_length`
+    3. Data of the file
+        contains the length of the file data and the file data,
+        length is `sizeof(filesize) + filesize`
+*/
 
 void process_args(file2png_ctx *ctx, int argc, char * const *argv)
 {
@@ -27,7 +39,7 @@ void process_args(file2png_ctx *ctx, int argc, char * const *argv)
                 print_usage(argv[0]);
                 exit(EXIT_SUCCESS);
             case 'v':
-                printf("file2png version %s.\n", FILE2PNG_VERSION);
+                printf("%s version %u.%u.%u\n", file2png_name, file2png_version[0], file2png_version[1], file2png_version[2]);
                 exit(EXIT_SUCCESS);
             case 'i':
                 ctx->in_filename = optarg;
@@ -158,7 +170,9 @@ int file2png(const char *filename, const char *pngname)
     //file name length(sizeof(uint16_t)), file name, file length(sizeof(uint64_t))
     uint16_t filename_length = strlen(filename);
 
-    uint64_t total_length = sizeof(filename_length) + filename_length + sizeof(file_size) + file_size;
+    uint64_t total_length = 
+        sizeof(file2png_name) + sizeof(file2png_version) +
+        sizeof(filename_length) + filename_length + sizeof(file_size) + file_size;
     uint8_t bytes_per_pixel = 3;//3 bytes per pixel, using RGB
     uint64_t final_length = (total_length % bytes_per_pixel == 0) 
         ? total_length 
@@ -185,6 +199,8 @@ int file2png(const char *filename, const char *pngname)
 
     buf.size = width * bytes_per_pixel;
 
+    png_write_bytes(png_ptr, &buf, (png_bytep)file2png_name, sizeof(file2png_name));
+    png_write_bytes(png_ptr, &buf, (png_bytep)file2png_version, sizeof(file2png_version));
     png_write_bytes(png_ptr, &buf, (png_bytep)&filename_length, sizeof(filename_length));
     png_write_bytes(png_ptr, &buf, (png_bytep)filename, strlen(filename));
     png_write_bytes(png_ptr, &buf, (png_bytep)&file_size, sizeof(file_size));
@@ -334,6 +350,25 @@ int png2file(const char *pngname, const char *filename)
     if(!buf.buffer){
         fprintf(stderr, "Error: Failed to allocate memory for image.\n");
         goto ERROR;
+    }
+
+    char header_name[sizeof(file2png_name)];
+    uint16_t header_version[sizeof(file2png_version) / sizeof(file2png_version[0])];
+    png_read_bytes(png_ptr, &buf, (png_bytep)header_name, sizeof(header_name));
+    if(strcmp(file2png_name, header_name)){
+        fprintf(stderr, "Error: Invalid file format.\n");
+        goto ERROR;
+    }
+    png_read_bytes(png_ptr, &buf, (png_bytep)header_version, sizeof(header_version));
+    if(header_version[0] > file2png_version[0]//file.xx > my.xx
+        ){
+        fprintf(stderr, "Error: Unsupported file format version: %u.%u.%u\n", 
+            header_version[0],header_version[1],header_version[2]);
+        goto ERROR;
+    }
+    else{
+        fprintf(stdout, "File format version: %u.%u.%u\n", 
+            header_version[0],header_version[1],header_version[2]);
     }
 
     uint64_t file_size;
