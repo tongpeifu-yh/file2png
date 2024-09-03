@@ -2,7 +2,7 @@
 Sometimes a few platforms provide free cloud picture storage services, in order to utilize them to store normal files I created this utility.
 
 ## Build
-CMake is supported. Since the GNU-like command line interface, MinGW is required to build on Windows.
+CMake is supported. Need libpng, and zlib if using static libraries. On some platforms you also need to link libm manually. Since the UNIX-like command line interface, MinGW is required to build on Windows.
 ```shell
 git clone https://github.com/tongpeifu-yh/file2png.git
 cd file2png
