@@ -345,6 +345,19 @@ int png2file(const char *pngname, const char *filename)
     }
 
     uint8_t bytes_per_pixel = 3;//3 bytes per pixel, using RGB
+    uint16_t filename_length;
+    uint64_t file_size;
+    // check picture size
+    uint64_t pixel_num = width * height;
+    if(pixel_num * bytes_per_pixel < 
+        sizeof(file2png_name) + sizeof(file2png_version) + 
+        sizeof(filename_length) + sizeof(file_size)
+        ){
+        fprintf(stderr, "Error: Image size is too small for this program.\n");
+        goto ERROR;
+    }
+
+    //set line buffer size and allocate memory
     buf.size = width * bytes_per_pixel;
     buf.buffer = (png_bytep)png_malloc(png_ptr, buf.size * sizeof(png_byte));
     if(!buf.buffer){
@@ -352,14 +365,17 @@ int png2file(const char *pngname, const char *filename)
         goto ERROR;
     }
 
+    // read header information
     char header_name[sizeof(file2png_name)];
     uint16_t header_version[sizeof(file2png_version) / sizeof(file2png_version[0])];
     png_read_bytes(png_ptr, &buf, (png_bytep)header_name, sizeof(header_name));
+    // check program name
     if(strcmp(file2png_name, header_name)){
         fprintf(stderr, "Error: Invalid file format.\n");
         goto ERROR;
     }
     png_read_bytes(png_ptr, &buf, (png_bytep)header_version, sizeof(header_version));
+    // check program version
     if(header_version[0] > file2png_version[0]//file.xx > my.xx
         ){
         fprintf(stderr, "Error: Unsupported file format version: %u.%u.%u\n", 
@@ -371,12 +387,15 @@ int png2file(const char *pngname, const char *filename)
             header_version[0],header_version[1],header_version[2]);
     }
 
-    uint64_t file_size;
-    uint16_t filename_length;
-    uint64_t pixel_num = width * height;
+    // get length of initial file name
     png_read_bytes(png_ptr, &buf, (png_bytep)&filename_length, sizeof(filename_length));
-    if(filename_length > pixel_num * bytes_per_pixel){
-        fprintf(stderr, "Error: File name length is too long.\n");
+    // check picture size
+    if(pixel_num * bytes_per_pixel < 
+        sizeof(file2png_name) + sizeof(file2png_version) + 
+        sizeof(filename_length) + sizeof(file_size) +
+        filename_length
+        ){
+        fprintf(stderr, "Error: Initial file name length is too long.\n");
         goto ERROR;
     }
     png_bytep initial_filename = (png_bytep)png_malloc(png_ptr, filename_length + 1);
@@ -384,20 +403,26 @@ int png2file(const char *pngname, const char *filename)
         fprintf(stderr, "Error: Failed to allocate memory for file name.\n");
         goto ERROR;
     }
+    // get initial file name
     png_read_bytes(png_ptr, &buf, initial_filename, filename_length);
     initial_filename[filename_length] = '\0';
     fprintf(stdout, "Initial file name: %s\n", initial_filename);
+
+    // get file size
     png_read_bytes(png_ptr, &buf, (png_bytep)&file_size, sizeof(file_size));
-    if(file_size > pixel_num * bytes_per_pixel){
+    // check picture size
+    if(pixel_num * bytes_per_pixel < 
+        sizeof(file2png_name) + sizeof(file2png_version) + 
+        sizeof(filename_length) + sizeof(file_size) +
+        filename_length + file_size
+        ){
         fprintf(stderr, "Error: File size is too long.\n");
         goto ERROR;
     }
     png_byte tmp[8192];
     size_t write_len = 0;
     
-    // while((write_len = fread(tmp, sizeof(png_byte), sizeof(tmp), ifp)) > 0){
-    //     png_write_bytes(png_ptr, &buf, tmp, read_len);
-    // }
+    // read data from png and write to file
     while(write_len + sizeof(tmp) < file_size){
         png_read_bytes(png_ptr, &buf, tmp, sizeof(tmp));
         fwrite(tmp, sizeof(png_byte), sizeof(tmp), ofp);
@@ -406,6 +431,7 @@ int png2file(const char *pngname, const char *filename)
     png_read_bytes(png_ptr, &buf, tmp, file_size - write_len);
     fwrite(tmp, sizeof(png_byte), file_size - write_len, ofp);
 
+    // release memory
     if(filename_new && !filename)
         free((char *)filename_new);
     png_free(png_ptr, buf.buffer);
