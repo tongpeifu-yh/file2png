@@ -87,11 +87,11 @@ void print_usage(const char *program)
     printf("Options:\n");
     printf("  -h, --help                    Print this help message\n");
     printf("  -v, --version                 Print version information\n");
-    printf("  -i, --input <filename>        Input file to convert(necessary)\n");
+    printf("  -i, --input <filename>        Input file to convert (necessary)\n");
     printf("  -o, --output <filename>       Output file name\n");
-    printf("  -f, --forwards                Convert file to PNG\n");
+    printf("  -f, --forwards                Convert file to PNG (default)\n");
     printf("  -b, --backwards               Convert PNG to file\n");
-    printf("  -c, --compression             Specify compression level(0-9, 6 by default)\n");
+    printf("  -c, --compression             Specify compression level (0-9, 6 by default)\n");
 }
 
 
