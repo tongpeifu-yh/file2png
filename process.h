@@ -11,6 +11,7 @@
 
 typedef struct _file2png_ctx{
     uint8_t sign;
+    uint8_t compression_level;
     const char *in_filename;
     const char *out_filename;
 
@@ -31,7 +32,7 @@ void process_args(file2png_ctx *ctx, int argc, char * const *argv);
 int process_image(file2png_ctx *ctx);
 void print_usage(const char *program);
 
-int file2png(const char *filename, const char * pngname);
+int file2png(const char *filename, const char * pngname, uint8_t compression_level);
 int png2file(const char *pngname, const char * filename);
 
 void png_write_byte(png_structp png_ptr, line_buf *buf, png_byte value);

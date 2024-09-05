@@ -28,10 +28,11 @@ void process_args(file2png_ctx *ctx, int argc, char * const *argv)
         {"output", required_argument, NULL, 'o'},
         {"forwards", no_argument, NULL, 'f'},
         {"backwards", no_argument, NULL, 'b'},
+        {"compression", required_argument, NULL, 'c'},
         {0, 0, 0, 0}
     };
     int opt,opt_index=0;
-    while((opt = getopt_long(argc, argv,"hvi:o:fb", long_options, &opt_index)) != -1)
+    while((opt = getopt_long(argc, argv,"hvi:o:fbc:", long_options, &opt_index)) != -1)
     {
         switch(opt)
         {
@@ -52,6 +53,13 @@ void process_args(file2png_ctx *ctx, int argc, char * const *argv)
                 break;
             case 'b':
                 ctx->sign = FILE2PNG_BACKWARDS;
+                break;
+            case 'c':
+                ctx->compression_level = atoi(optarg);
+                if(ctx->compression_level > 9){
+                    fprintf(stderr, "Invalid compression level: %s\n", optarg);
+                    goto ERROR;
+                }
                 break;
             default:
                 fprintf(stderr, "Invalid option: '-%c' or --%s\n", opt, argv[optind-1]);
@@ -79,10 +87,11 @@ void print_usage(const char *program)
     printf("Options:\n");
     printf("  -h, --help                    Print this help message\n");
     printf("  -v, --version                 Print version information\n");
-    printf("  -i, --input <filename>        Input file to convert\n");
-    printf("  -o, --output <filename>       Output file\n");
+    printf("  -i, --input <filename>        Input file to convert(necessary)\n");
+    printf("  -o, --output <filename>       Output file name\n");
     printf("  -f, --forwards                Convert file to PNG\n");
     printf("  -b, --backwards               Convert PNG to file\n");
+    printf("  -c, --compression             Specify compression level(0-9, 6 by default)\n");
 }
 
 
@@ -91,7 +100,7 @@ int process_image(file2png_ctx *ctx)
     if(!ctx) 
         return EXIT_FAILURE;
     if(ctx->sign == FILE2PNG_FORWARDS){
-        return file2png(ctx->in_filename, ctx->out_filename);
+        return file2png(ctx->in_filename, ctx->out_filename, ctx->compression_level);
     }
     else if (ctx->sign == FILE2PNG_BACKWARDS){
         return png2file(ctx->in_filename, ctx->out_filename);
@@ -103,7 +112,7 @@ int process_image(file2png_ctx *ctx)
     
 }
 
-int file2png(const char *filename, const char *pngname)
+int file2png(const char *filename, const char *pngname, uint8_t compression_level)
 {
     const char *pngname_new = NULL;
     FILE *ifp = NULL;
@@ -160,6 +169,9 @@ int file2png(const char *filename, const char *pngname)
     }
 
     png_init_io(png_ptr, ofp);
+    
+    png_set_compression_level(png_ptr, compression_level);
+    fprintf(stdout, "Compression level: %u\n", compression_level);
 
     //compute length of ifp
     fseek(ifp, 0, SEEK_END);
