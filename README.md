@@ -24,5 +24,5 @@ Options:
   -o, --output <filename>       Output file
   -f, --forwards                Convert file to PNG
   -b, --backwards               Convert PNG to file
-
+  -c, --compression <level>     Specify compression level
 ```
