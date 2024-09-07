@@ -29,7 +29,7 @@ void process_args(file2png_ctx *ctx, int argc, char * const *argv)
         {"forwards", no_argument, NULL, 'f'},
         {"backwards", no_argument, NULL, 'b'},
         {"compression", required_argument, NULL, 'c'},
-        {"stego", no_argument, NULL, 's'},
+        {"stego", optional_argument, NULL, 's'},
         {"cover", required_argument, NULL, 'C'},
         {0, 0, 0, 0}
     };
@@ -64,13 +64,28 @@ void process_args(file2png_ctx *ctx, int argc, char * const *argv)
                 }
                 break;
             case 's':
-                ctx->stego = STEGO_DEFAULT;
+                if(optarg){
+                    strlwr(optarg);
+                    if(strcmp(optarg, "lsb1") == 0){
+                        ctx->stego = STEGO_LSB1;
+                    }
+                    else if(strcmp(optarg, "lsb2") == 0){
+                        ctx->stego = STEGO_LSB2;
+                    }
+                    else{
+                        fprintf(stderr, "Invalid stego method: %s\n", optarg);
+                        goto ERROR;
+                    }
+                }
+                else{
+                    ctx->stego = STEGO_DEFAULT;
+                }
                 break;
             case 'C':
                 ctx->cover_name = optarg;
                 break;
             default:
-                fprintf(stderr, "Invalid option: %s\n", argv[optind-1]);
+                //fprintf(stderr, "Invalid option: %s\n", argv[optind-1]);
                 goto ERROR;
         }
     }
@@ -105,7 +120,7 @@ void print_usage(const char *program)
     printf("  -f, --forwards                Convert file to PNG (default)\n");
     printf("  -b, --backwards               Convert PNG to file\n");
     printf("  -c, --compression             Specify compression level (0-9, 6 by default)\n");
-    printf("  -s, --stego                   Using steganography\n");
+    printf("  -s, --stego[=<lsb1|lsb2>]     Using steganography\n");
     printf("  -C, --cover <filename>        Specify cover image for steganography\n");
 }
 
@@ -126,11 +141,11 @@ int process_image(file2png_ctx *ctx)
             return EXIT_FAILURE;
         }
     }
-    else if(ctx->stego == STEGO_DEFAULT) {
+    else if(ctx->stego == STEGO_LSB1 || ctx->stego == STEGO_LSB2 || ctx->stego == STEGO_DEFAULT) {
         if(ctx->sign == FILE2PNG_FORWARDS)
-            return stego_hide(ctx->in_filename, ctx->cover_name, ctx->out_filename);
+            return stego_hide(ctx->in_filename, ctx->cover_name, ctx->out_filename, ctx->stego);
         else if(ctx->sign == FILE2PNG_BACKWARDS)
-            return stego_recover(ctx->in_filename, ctx->out_filename);
+            return stego_recover(ctx->in_filename, ctx->out_filename, ctx->stego);
         else{
             fprintf(stderr, "Error: Invalid conversion sign.\n");
             return EXIT_FAILURE;
@@ -325,6 +340,7 @@ int png2file(const char *pngname, const char *filename)
     png_infop info_ptr = NULL;
     uint32_t width, height;
     line_buf buf={0,0,0,NULL};
+    png_bytep initial_filename = NULL;
 
     if(!filename){
         size_t len = strlen(pngname) + strlen(".file") + 1;
@@ -440,7 +456,7 @@ int png2file(const char *pngname, const char *filename)
         fprintf(stderr, "Error: Initial file name length is too long.\n");
         goto ERROR;
     }
-    png_bytep initial_filename = (png_bytep)png_malloc(png_ptr, filename_length + 1);
+    initial_filename = (png_bytep)png_malloc(png_ptr, filename_length + 1);
     if(!initial_filename){
         fprintf(stderr, "Error: Failed to allocate memory for file name.\n");
         goto ERROR;

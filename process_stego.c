@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-int stego_hide(const char *input_name, const char *cover_name, const char *output_name)
+int stego_hide(const char *input_name, const char *cover_name, const char *output_name, stego_t stego)
 {
     FILE *ifp = NULL, *ofp = NULL, *cfp = NULL;
     uint64_t file_size = 0;
@@ -14,6 +14,18 @@ int stego_hide(const char *input_name, const char *cover_name, const char *outpu
     const char *output_name_new = NULL;
     line_buf cbuf = {0, 0, 0, NULL};
     line_buf obuf = {0, 0, 0, NULL};
+    stego_write_bytes_f *stego_write_bytes = NULL;
+
+    if (stego == STEGO_LSB1) {
+        stego_write_bytes = &stego_write_bytes_lsb1;
+    }
+    else if (stego == STEGO_LSB2) {
+        stego_write_bytes = &stego_write_bytes_lsb2;
+    }
+    else {
+        fprintf(stderr, "Error: Unsupported stego mode.\n");
+        return EXIT_FAILURE;
+    }
 
     get_new_file_name(output_name, input_name, output_name_new, ".png");
 
@@ -69,7 +81,7 @@ int stego_hide(const char *input_name, const char *cover_name, const char *outpu
     // and the data of file.
     uint64_t total_size = sizeof(file2png_name) + sizeof(file2png_version) + sizeof(input_name_length) +
                           input_name_length + sizeof(file_size) + file_size;
-    if (total_size > height * width) {
+    if (total_size * get_pixels_per_byte(stego) > height * width) {
         fprintf(stderr, "Error: Payload is too large for the cover.\n");
         goto ERROR;
     }
@@ -159,7 +171,7 @@ ERROR:
     return EXIT_FAILURE;
 }
 
-int stego_recover(const char *input_name, const char *output_name)
+int stego_recover(const char *input_name, const char *output_name, stego_t stego)
 {
     FILE *ifp = NULL, *ofp = NULL;
     uint64_t file_size = 0;
@@ -169,6 +181,19 @@ int stego_recover(const char *input_name, const char *output_name)
     uint32_t width = 0, height = 0;
     const char *output_name_new = NULL;
     line_buf buf = {0, 0, 0, NULL};
+    char *initial_filename = NULL;
+    stego_read_bytes_f *stego_read_bytes;
+
+    if (stego == STEGO_LSB1) {
+        stego_read_bytes = &stego_read_bytes_lsb1;
+    }
+    else if (stego == STEGO_LSB2) {
+        stego_read_bytes = &stego_read_bytes_lsb2;
+    }
+    else {
+        fprintf(stderr, "Error: Unsupported stego mode.\n");
+        return EXIT_FAILURE;
+    }
 
     get_new_file_name(output_name, input_name, output_name_new, ".file");
 
@@ -211,8 +236,8 @@ int stego_recover(const char *input_name, const char *output_name)
         goto ERROR;
     }
 
-    if (pixel_num <
-        sizeof(file2png_name) + sizeof(file2png_version) + sizeof(file_name_length) + sizeof(file_size)) {
+    if (pixel_num < get_pixels_per_byte(stego) * (sizeof(file2png_name) + sizeof(file2png_version) +
+                                                  sizeof(file_name_length) + sizeof(file_size))) {
         fprintf(stderr, "Error: Image size is too small for this program.\n");
         goto ERROR;
     }
@@ -243,12 +268,13 @@ int stego_recover(const char *input_name, const char *output_name)
     // get length of initial file name
     stego_read_bytes(input, &buf, (uint8_t *)&file_name_length, sizeof(file_name_length));
     // check picture size
-    if (pixel_num < sizeof(file2png_name) + sizeof(file2png_version) + sizeof(file_name_length) +
-                        sizeof(file_size) + file_name_length) {
+    if (pixel_num <
+        get_pixels_per_byte(stego) * (sizeof(file2png_name) + sizeof(file2png_version) +
+                                      sizeof(file_name_length) + sizeof(file_size) + file_name_length)) {
         fprintf(stderr, "Error: Initial file name length is too long.\n");
         goto ERROR;
     }
-    char *initial_filename = (char *)malloc(file_name_length + 1);
+    initial_filename = (char *)malloc(file_name_length + 1);
     if (!initial_filename) {
         fprintf(stderr, "Error: Failed to allocate memory for file name.\n");
         goto ERROR;
@@ -261,8 +287,9 @@ int stego_recover(const char *input_name, const char *output_name)
     // get file size
     stego_read_bytes(input, &buf, (uint8_t *)&file_size, sizeof(file_size));
     // check picture size
-    if (pixel_num < sizeof(file2png_name) + sizeof(file2png_version) + sizeof(file_name_length) +
-                        sizeof(file_size) + file_name_length + file_size) {
+    if (pixel_num < get_pixels_per_byte(stego) *
+                        (sizeof(file2png_name) + sizeof(file2png_version) + sizeof(file_name_length) +
+                         sizeof(file_size) + file_name_length + file_size)) {
         fprintf(stderr, "Error: File size is too long.\n");
         goto ERROR;
     }
@@ -307,8 +334,8 @@ ERROR:
     return EXIT_FAILURE;
 }
 
-void stego_write_bytes(png_structp cover, line_buf *cbuf, int bytes_per_pixel_cover, png_structp output,
-                       line_buf *obuf, const uint8_t *bytes, size_t size)
+void stego_write_bytes_lsb2(png_structp cover, line_buf *cbuf, int bytes_per_pixel_cover, png_structp output,
+                            line_buf *obuf, const uint8_t *bytes, size_t size)
 {
     uint8_t pixel[4] = {0, 0, 0, 255};
     for (size_t i = 0; i < size; i++) {
@@ -329,12 +356,53 @@ void stego_write_finish(png_structp cover, line_buf *cbuf, int bytes_per_pixel_c
     }
 }
 
-void stego_read_bytes(png_structp png, line_buf *buf, uint8_t *bytes, size_t size)
+void stego_read_bytes_lsb2(png_structp png, line_buf *buf, uint8_t *bytes, size_t size)
 {
     uint8_t pixel[4] = {0, 0, 0, 0};
     for (size_t i = 0; i < size; i++) {
         png_read_bytes(png, buf, pixel, 4);
         bytes[i] = (pixel[0] & 0x03) | ((pixel[1] & 0x03) << 2) | ((pixel[2] & 0x03) << 4) |
                    ((pixel[3] & 0x03) << 6);
+    }
+}
+
+void stego_write_bytes_lsb1(png_structp cover, line_buf *cbuf, int bytes_per_pixel_cover, png_structp output,
+                            line_buf *obuf, const uint8_t *bytes, size_t size)
+{
+    uint8_t pixel[4] = {0, 0, 0, 255};
+    for (size_t i = 0; i < size; i++) {
+        png_read_bytes(cover, cbuf, pixel, bytes_per_pixel_cover);
+        for (size_t j = 0; j < 4; j++)
+            pixel[j] = (pixel[j] & ~0x01) | ((bytes[i] >> j) & 0x01);
+        png_write_bytes(output, obuf, pixel, 4);
+        png_read_bytes(cover, cbuf, pixel, bytes_per_pixel_cover);
+        for (size_t j = 0; j < 4; j++)
+            pixel[j] = (pixel[j] & ~0x01) | ((bytes[i] >> (j + 4)) & 0x01);
+        png_write_bytes(output, obuf, pixel, 4);
+    }
+}
+
+void stego_read_bytes_lsb1(png_structp png, line_buf *buf, uint8_t *bytes, size_t size)
+{
+    uint8_t pixel[4] = {0, 0, 0, 0};
+    for (size_t i = 0; i < size; i++) {
+        png_read_bytes(png, buf, pixel, 4);
+        bytes[i] = (pixel[0] & 0x01) | ((pixel[1] & 0x01) << 1) | ((pixel[2] & 0x01) << 2) |
+                   ((pixel[3] & 0x01) << 3);
+        png_read_bytes(png, buf, pixel, 4);
+        bytes[i] |= ((pixel[0] & 0x01) << 4) | ((pixel[1] & 0x01) << 5) | ((pixel[2] & 0x01) << 6) |
+                    ((pixel[3] & 0x01) << 7);
+    }
+}
+
+int get_pixels_per_byte(stego_t stego)
+{
+    switch (stego) {
+    case STEGO_LSB1:
+        return 2;
+    case STEGO_LSB2:
+        return 1;
+    default:
+        return 0;
     }
 }
