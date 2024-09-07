@@ -66,7 +66,7 @@ void process_args(file2png_ctx *ctx, int argc, char * const *argv)
                 break;
             case 's':
                 if(optarg){
-                    strlwr(optarg);
+                    strlwr_custom(optarg);
                     if(strcmp(optarg, "lsb1") == 0){
                         ctx->stego = STEGO_LSB1;
                     }
