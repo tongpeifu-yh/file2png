@@ -9,7 +9,7 @@ set(LIBPNG_LIB_DIR "C:\\msys64\\usr\\local\\lib")
 # 2. Set installation directory using `-DCMAKE_INSTALL_PREFIX=` in the command line.
 
 project(file2png ASM C)
-add_executable(file2png main.c process.c)
+add_executable(file2png main.c process.c process_stego.c)
 
 target_include_directories(file2png PUBLIC ${LIBPNG_INCLUDE_DIR})
 target_link_directories(file2png PUBLIC ${LIBPNG_LIB_DIR})

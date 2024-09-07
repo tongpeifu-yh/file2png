@@ -9,12 +9,18 @@
 #define FILE2PNG_FORWARDS 1 // file to png
 #define FILE2PNG_BACKWARDS 2 // png back to file
 
+typedef enum _stego_t{
+    STEGO_NONE = 0,
+    STEGO_DEFAULT,
+} stego_t;
+
 typedef struct _file2png_ctx{
     uint8_t sign;
     uint8_t compression_level;
     const char *in_filename;
     const char *out_filename;
-
+    stego_t stego;
+    const char * cover_name;
 }file2png_ctx;
 
 // typedef struct _file_info{
@@ -42,4 +48,31 @@ void png_write_byte_flush(png_structp png_ptr, line_buf *buf);
 void png_read_byte(png_structp png_ptr, line_buf *buf, png_bytep value);
 void png_read_bytes(png_structp png_ptr, line_buf *buf, png_bytep src, size_t size);
 void png_read_byte_flush(png_structp png_ptr, line_buf *buf);
+
+int stego_hide(const char * file_name, const char * cover_name, const char * output_name);
+int stego_recover(const char * stego_name, const char * file_name);
+
+void stego_write_bytes(png_structp cover, line_buf *cbuf, int bytes_per_pixel_cover, png_structp output, line_buf *obuf, const uint8_t* bytes, size_t size);
+void stego_write_finish(png_structp cover, line_buf *cbuf, int bytes_per_pixel_cover, png_structp output, line_buf *obuf, uint32_t height);
+
+void stego_read_bytes(png_structp png, line_buf *buf, uint8_t *bytes, size_t size);
+
+#define get_new_file_name(file_name, existing_name, new_file_name, suffix) \
+    if(!file_name){\
+        size_t len = strlen(existing_name) + strlen(suffix) + 1;\
+        char *name_tmp = malloc(len);\
+        new_file_name = name_tmp;\
+        if(!name_tmp){\
+            fprintf(stderr, "Error: Out of memory.\n");\
+            goto ERROR;\
+        }\
+        if(snprintf(name_tmp, len, "%s%s", existing_name, suffix)>=len){\
+            fprintf(stderr, "Error: Failed to format output filename.\n");\
+            goto ERROR;\
+        }\
+    }\
+    else\
+        new_file_name = file_name;
+
+
 #endif

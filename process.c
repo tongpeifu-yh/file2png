@@ -29,10 +29,12 @@ void process_args(file2png_ctx *ctx, int argc, char * const *argv)
         {"forwards", no_argument, NULL, 'f'},
         {"backwards", no_argument, NULL, 'b'},
         {"compression", required_argument, NULL, 'c'},
+        {"stego", no_argument, NULL, 's'},
+        {"cover", required_argument, NULL, 'C'},
         {0, 0, 0, 0}
     };
     int opt,opt_index=0;
-    while((opt = getopt_long(argc, argv,"hvi:o:fbc:", long_options, &opt_index)) != -1)
+    while((opt = getopt_long(argc, argv,"hvi:o:fbc:sC:", long_options, &opt_index)) != -1)
     {
         switch(opt)
         {
@@ -61,8 +63,14 @@ void process_args(file2png_ctx *ctx, int argc, char * const *argv)
                     goto ERROR;
                 }
                 break;
+            case 's':
+                ctx->stego = STEGO_DEFAULT;
+                break;
+            case 'C':
+                ctx->cover_name = optarg;
+                break;
             default:
-                fprintf(stderr, "Invalid option: '-%c' or --%s\n", opt, argv[optind-1]);
+                fprintf(stderr, "Invalid option: %s\n", argv[optind-1]);
                 goto ERROR;
         }
     }
@@ -73,6 +81,11 @@ void process_args(file2png_ctx *ctx, int argc, char * const *argv)
     if(!ctx->out_filename){
         fprintf(stderr, "Warning: Output file not specified. <InputFileName>.png will be used for forwards and <InputFileName>.file will be used for backwards.\n");
         //goto ERROR;
+    }
+    if(ctx->stego!=STEGO_NONE && ctx->sign == FILE2PNG_FORWARDS && !ctx->cover_name){
+        // when hiding file in stego image, cover is needed
+        fprintf(stderr, "Error: Stego mode specified but cover file not provided.\n");
+        goto ERROR;
     }
     return;
 ERROR:
@@ -92,6 +105,8 @@ void print_usage(const char *program)
     printf("  -f, --forwards                Convert file to PNG (default)\n");
     printf("  -b, --backwards               Convert PNG to file\n");
     printf("  -c, --compression             Specify compression level (0-9, 6 by default)\n");
+    printf("  -s, --stego                   Using steganography\n");
+    printf("  -C, --cover <filename>        Specify cover image for steganography\n");
 }
 
 
@@ -99,14 +114,30 @@ int process_image(file2png_ctx *ctx)
 {
     if(!ctx) 
         return EXIT_FAILURE;
-    if(ctx->sign == FILE2PNG_FORWARDS){
-        return file2png(ctx->in_filename, ctx->out_filename, ctx->compression_level);
+    if(ctx->stego == STEGO_NONE) {
+        if(ctx->sign == FILE2PNG_FORWARDS){
+            return file2png(ctx->in_filename, ctx->out_filename, ctx->compression_level);
+        }
+        else if (ctx->sign == FILE2PNG_BACKWARDS){
+            return png2file(ctx->in_filename, ctx->out_filename);
+        }
+        else{
+            fprintf(stderr, "Error: Invalid conversion sign.\n");
+            return EXIT_FAILURE;
+        }
     }
-    else if (ctx->sign == FILE2PNG_BACKWARDS){
-        return png2file(ctx->in_filename, ctx->out_filename);
+    else if(ctx->stego == STEGO_DEFAULT) {
+        if(ctx->sign == FILE2PNG_FORWARDS)
+            return stego_hide(ctx->in_filename, ctx->cover_name, ctx->out_filename);
+        else if(ctx->sign == FILE2PNG_BACKWARDS)
+            return stego_recover(ctx->in_filename, ctx->out_filename);
+        else{
+            fprintf(stderr, "Error: Invalid conversion sign.\n");
+            return EXIT_FAILURE;
+        }
     }
     else{
-        fprintf(stderr, "Error: Invalid conversion sign.\n");
+        fprintf(stderr, "Error: Invalid stego mode.\n");
         return EXIT_FAILURE;
     }
     
@@ -119,7 +150,6 @@ int file2png(const char *filename, const char *pngname, uint8_t compression_leve
     FILE *ofp = NULL;
     png_structp png_ptr = NULL;
     png_infop info_ptr = NULL;
-    png_bytep *row_pointers = NULL;
     uint32_t width, height;
     line_buf buf={0,0,0, NULL};
 
@@ -481,13 +511,13 @@ void png_read_byte(png_structp png_ptr, line_buf *buf, png_bytep value)
         png_read_row(png_ptr, buf->buffer, NULL);// read a row first
         buf->rw_times++;
     }
-    *value = buf->buffer[buf->cursor++];
     if(buf->cursor >= buf->size)
     {
         png_read_row(png_ptr, buf->buffer, NULL);
         buf->rw_times++;
         buf->cursor = 0;
     }
+    *value = buf->buffer[buf->cursor++];
 }
 
 void png_read_bytes(png_structp png_ptr, line_buf *buf, png_bytep src, size_t size)
@@ -498,7 +528,7 @@ void png_read_bytes(png_structp png_ptr, line_buf *buf, png_bytep src, size_t si
     }
 }
 
-void png_read_byte_flush(png_structp png_ptr, line_buf *buf)
+void png_read_byte_flush(png_structp png_ptr, line_buf *buf) // not used
 {
     if(buf->cursor > 0){
         png_read_row(png_ptr, buf->buffer, NULL);
