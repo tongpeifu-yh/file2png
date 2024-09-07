@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "process.h"
 #include "public.h"
@@ -124,6 +125,15 @@ void print_usage(const char *program)
     printf("  -C, --cover <filename>        Specify cover image for steganography\n");
 }
 
+char *strlwr_custom(char *str) 
+{ 
+    char *p = str;
+    while(*str){
+        *str = tolower(*str);
+        str++;
+    }
+    return p;
+}
 
 int process_image(file2png_ctx *ctx)
 {

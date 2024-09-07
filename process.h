@@ -40,6 +40,8 @@ void process_args(file2png_ctx *ctx, int argc, char * const *argv);
 int process_image(file2png_ctx *ctx);
 void print_usage(const char *program);
 
+char *strlwr_custom(char *str);
+
 int file2png(const char *filename, const char * pngname, uint8_t compression_level);
 int png2file(const char *pngname, const char * filename);
 
