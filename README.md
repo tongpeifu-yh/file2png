@@ -25,4 +25,6 @@ Options:
   -f, --forwards                Convert file to PNG
   -b, --backwards               Convert PNG to file
   -c, --compression <level>     Specify compression level
+  -s, --stego                   Using steganography
+  -C, --cover <filename>        Specify cover image for steganography
 ```
