@@ -11,6 +11,10 @@ cd file2png
 cmake -B./build -S./ -DCMAKE_C_COMPILER=gcc -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build ./build
 ```
+Of course you can also build using one command, since there are only 3 source files:
+```shell
+gcc main.c process.c process_stego.c -o file2png -I<LIBPNG_INCLUDE_PATH> -L<LIBPNG_LIB_PATH> -l<lib>
+```
 
 ## Usage
 Use `--help` for usage information.
