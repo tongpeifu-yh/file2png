@@ -8,7 +8,7 @@ git clone https://github.com/tongpeifu-yh/file2png.git
 cd file2png
 # Now change the library path in CMakeLists.txt to build on your system
 # After that,
-cmake -B ./build -G Ninja -DCMAKE_C_COMPILER=gcc -S ./
+cmake -B./build -S./ -DCMAKE_C_COMPILER=gcc -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build ./build
 ```
 
