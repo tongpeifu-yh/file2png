@@ -35,7 +35,7 @@ void process_args(file2png_ctx *ctx, int argc, char * const *argv)
         {0, 0, 0, 0}
     };
     int opt,opt_index=0;
-    while((opt = getopt_long(argc, argv,"hvi:o:fbc:sC:", long_options, &opt_index)) != -1)
+    while((opt = getopt_long(argc, argv,"hvi:o:fbc:s::C:", long_options, &opt_index)) != -1)
     {
         switch(opt)
         {

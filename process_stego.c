@@ -18,9 +18,11 @@ int stego_hide(const char *input_name, const char *cover_name, const char *outpu
 
     if (stego == STEGO_LSB1) {
         stego_write_bytes = &stego_write_bytes_lsb1;
+        fprintf(stdout, "Using LSB1 stego.\n");
     }
     else if (stego == STEGO_LSB2) {
         stego_write_bytes = &stego_write_bytes_lsb2;
+        fprintf(stdout, "Using LSB2 stego.\n");
     }
     else {
         fprintf(stderr, "Error: Unsupported stego mode.\n");
@@ -186,9 +188,11 @@ int stego_recover(const char *input_name, const char *output_name, stego_t stego
 
     if (stego == STEGO_LSB1) {
         stego_read_bytes = &stego_read_bytes_lsb1;
+        fprintf(stdout, "Using LSB1 stego.\n");
     }
     else if (stego == STEGO_LSB2) {
         stego_read_bytes = &stego_read_bytes_lsb2;
+        fprintf(stdout, "Using LSB2 stego.\n");
     }
     else {
         fprintf(stderr, "Error: Unsupported stego mode.\n");
