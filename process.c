@@ -121,7 +121,7 @@ void print_usage(const char *program)
     printf("  -f, --forwards                Convert file to PNG (default)\n");
     printf("  -b, --backwards               Convert PNG to file\n");
     printf("  -c, --compression             Specify compression level (0-9, 6 by default)\n");
-    printf("  -s, --stego[=<lsb1|lsb2>]     Using steganography\n");
+    printf("  -s, --stego[=<lsb1|lsb2>]     Using steganography (lsb2 by default)\n");
     printf("  -C, --cover <filename>        Specify cover image for steganography\n");
 }
 

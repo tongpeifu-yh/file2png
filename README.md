@@ -29,6 +29,6 @@ Options:
   -f, --forwards                Convert file to PNG
   -b, --backwards               Convert PNG to file
   -c, --compression <level>     Specify compression level
-  -s, --stego[=<lsb1|lsb2>]     Using steganography
+  -s, --stego[=<lsb1|lsb2>]     Using steganography (lsb2 by default)
   -C, --cover <filename>        Specify cover image for steganography
 ```
