@@ -26,9 +26,22 @@ Options:
   -v, --version                 Print version information
   -i, --input <filename>        Input file to convert
   -o, --output <filename>       Output file
-  -f, --forwards                Convert file to PNG
+  -f, --forwards                Convert file to PNG (default)
   -b, --backwards               Convert PNG to file
   -c, --compression <level>     Specify compression level
   -s, --stego[=<lsb1|lsb2>]     Using steganography (lsb2 by default)
   -C, --cover <filename>        Specify cover image for steganography
+```
+Examples:
+```shell
+# 1. convert file "data.dat" to a PNG
+file2png -i data.dat -o data.png
+# 2. recover file "data.dat" from "data.png"
+file2png -i data.png -o data.dat -b
+# 3. convert file "data.dat" to a PNG using lsb1 steganography
+file2png -i data.dat -o data.png -C cover.png -slsb1
+# 4. convert file "data.dat" to a PNG using lsb2 steganography
+file2png -i data.dat -o data.png -C cover.png -s
+# 5. recover file "data.dat" from "data.png" using lsb1 steganography
+file2png -i data.png -o data.dat -b --stego=lsb1
 ```
